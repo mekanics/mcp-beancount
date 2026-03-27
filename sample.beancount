@@ -1,0 +1,365 @@
+; sample.beancount — synthetic ledger for testing
+; Currency: CHF primarily, some USD in investments
+; Spans 2023-2026
+
+option "title" "Alex Sample Ledger"
+option "operating_currency" "CHF"
+
+; ────────────────────────────────────────────
+; Account declarations
+; ────────────────────────────────────────────
+2020-01-01 open Assets:Bank:Checking CHF
+2020-01-01 open Assets:Bank:Savings CHF
+2020-01-01 open Assets:Investments:IBKR USD
+2020-01-01 open Liabilities:CreditCard CHF
+2020-01-01 open Income:Salary CHF
+2020-01-01 open Income:Freelance CHF
+2020-01-01 open Expenses:Food CHF
+2020-01-01 open Expenses:Transport CHF
+2020-01-01 open Expenses:Rent CHF
+2020-01-01 open Expenses:Health CHF
+2020-01-01 open Expenses:Entertainment CHF
+2020-01-01 open Expenses:Utilities CHF
+2020-01-01 open Equity:Opening-Balances
+
+; ────────────────────────────────────────────
+; Opening balances (2020-01-01)
+; ────────────────────────────────────────────
+2020-01-01 * "Opening balance"
+  Assets:Bank:Checking      15000 CHF
+  Assets:Bank:Savings       30000 CHF
+  Assets:Investments:IBKR    5000 USD
+  Liabilities:CreditCard    -2000 CHF
+  Equity:Opening-Balances
+
+; ────────────────────────────────────────────
+; 2023 Transactions
+; ────────────────────────────────────────────
+2023-01-31 * "Employer AG" "January salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-01-05 * "Migros" "Groceries"
+  Expenses:Food              120 CHF
+  Assets:Bank:Checking      -120 CHF
+
+2023-01-10 * "SBB" "Monthly transport pass"
+  Expenses:Transport          86 CHF
+  Assets:Bank:Checking       -86 CHF
+
+2023-01-01 * "Landlord GmbH" "January rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+2023-02-28 * "Employer AG" "February salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-02-03 * "Coop" "Weekly shopping"
+  Expenses:Food               95 CHF
+  Assets:Bank:Checking       -95 CHF
+
+2023-02-01 * "Landlord GmbH" "February rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+2023-03-31 * "Employer AG" "March salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-03-15 * "Freelance Client X" "Web design project"
+  Income:Freelance         -1200 CHF
+  Assets:Bank:Checking      1200 CHF
+
+2023-03-07 * "Denner" "Groceries"
+  Expenses:Food               78 CHF
+  Assets:Bank:Checking       -78 CHF
+
+2023-03-01 * "Landlord GmbH" "March rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+2023-04-30 * "Employer AG" "April salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-04-12 * "Arztpraxis Dr. Müller" "Health checkup"
+  Expenses:Health            180 CHF
+  Assets:Bank:Checking      -180 CHF
+
+2023-04-20 * "Netflix" "Monthly subscription"
+  Expenses:Entertainment      18 CHF
+  Liabilities:CreditCard     -18 CHF
+
+2023-04-01 * "Landlord GmbH" "April rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+2023-05-31 * "Employer AG" "May salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-05-10 * "Migros" "Groceries"
+  Expenses:Food              102 CHF
+  Assets:Bank:Checking      -102 CHF
+
+2023-05-01 * "Landlord GmbH" "May rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+2023-06-30 * "Employer AG" "June salary"
+  Income:Salary            -8500 CHF
+  Assets:Bank:Checking      8500 CHF
+
+2023-06-15 * "Freelance Client Y" "Consulting"
+  Income:Freelance         -800 CHF
+  Assets:Bank:Checking      800 CHF
+
+2023-06-20 * "SBB" "Transport pass"
+  Expenses:Transport          86 CHF
+  Assets:Bank:Checking       -86 CHF
+
+2023-06-01 * "Landlord GmbH" "June rent"
+  Expenses:Rent             1800 CHF
+  Assets:Bank:Checking     -1800 CHF
+
+; Transfer to savings mid-year
+2023-06-30 * "Internal transfer to savings"
+  Assets:Bank:Savings       3000 CHF
+  Assets:Bank:Checking     -3000 CHF
+
+; ────────────────────────────────────────────
+; 2024 Transactions
+; ────────────────────────────────────────────
+2024-01-31 * "Employer AG" "January salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-01-05 * "Migros" "Groceries"
+  Expenses:Food              135 CHF
+  Assets:Bank:Checking      -135 CHF
+
+2024-01-10 * "SBB" "Monthly transport pass"
+  Expenses:Transport          90 CHF
+  Assets:Bank:Checking       -90 CHF
+
+2024-01-01 * "Landlord GmbH" "January rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+2024-02-29 * "Employer AG" "February salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-02-14 * "Restaurant Zum See" "Valentine dinner"
+  Expenses:Food              220 CHF
+  Liabilities:CreditCard    -220 CHF
+
+2024-02-01 * "Landlord GmbH" "February rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+2024-03-31 * "Employer AG" "March salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-03-20 * "Freelance Client Z" "App development"
+  Income:Freelance         -2500 CHF
+  Assets:Bank:Checking      2500 CHF
+
+2024-03-15 * "Zahnarzt" "Dental"
+  Expenses:Health            350 CHF
+  Assets:Bank:Checking      -350 CHF
+
+2024-03-01 * "Landlord GmbH" "March rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+; Credit card payment
+2024-03-31 * "Credit card payment"
+  Liabilities:CreditCard     238 CHF
+  Assets:Bank:Checking      -238 CHF
+
+2024-04-30 * "Employer AG" "April salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-04-15 * "EWZ" "Electricity bill"
+  Expenses:Utilities         145 CHF
+  Assets:Bank:Checking      -145 CHF
+
+2024-04-01 * "Landlord GmbH" "April rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+2024-05-31 * "Employer AG" "May salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-05-20 * "Migros" "Monthly groceries"
+  Expenses:Food              160 CHF
+  Assets:Bank:Checking      -160 CHF
+
+2024-05-01 * "Landlord GmbH" "May rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+2024-06-30 * "Employer AG" "June salary"
+  Income:Salary            -9000 CHF
+  Assets:Bank:Checking      9000 CHF
+
+2024-06-10 * "Coop" "Groceries"
+  Expenses:Food              112 CHF
+  Assets:Bank:Checking      -112 CHF
+
+2024-06-01 * "Landlord GmbH" "June rent"
+  Expenses:Rent             1900 CHF
+  Assets:Bank:Checking     -1900 CHF
+
+; Transfer to savings
+2024-06-30 * "Internal transfer to savings"
+  Assets:Bank:Savings       5000 CHF
+  Assets:Bank:Checking     -5000 CHF
+
+; ────────────────────────────────────────────
+; 2025 Transactions
+; ────────────────────────────────────────────
+2025-01-31 * "Employer AG" "January salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-01-08 * "Migros" "Groceries"
+  Expenses:Food              145 CHF
+  Assets:Bank:Checking      -145 CHF
+
+2025-01-10 * "SBB" "Monthly transport pass"
+  Expenses:Transport          95 CHF
+  Assets:Bank:Checking       -95 CHF
+
+2025-01-01 * "Landlord GmbH" "January rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2025-02-28 * "Employer AG" "February salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-02-15 * "Freelance Client A" "Data analysis"
+  Income:Freelance         -1800 CHF
+  Assets:Bank:Checking      1800 CHF
+
+2025-02-10 * "Coop" "Weekly groceries"
+  Expenses:Food               98 CHF
+  Assets:Bank:Checking       -98 CHF
+
+2025-02-01 * "Landlord GmbH" "February rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2025-03-31 * "Employer AG" "March salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-03-20 * "Apotheke" "Pharmacy"
+  Expenses:Health             65 CHF
+  Assets:Bank:Checking       -65 CHF
+
+2025-03-01 * "Landlord GmbH" "March rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2025-04-30 * "Employer AG" "April salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-04-12 * "Restaurant Hechtplatz" "Team dinner"
+  Expenses:Food              185 CHF
+  Liabilities:CreditCard    -185 CHF
+
+2025-04-01 * "Landlord GmbH" "April rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2025-05-31 * "Employer AG" "May salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-05-15 * "Migros" "Groceries"
+  Expenses:Food              128 CHF
+  Assets:Bank:Checking      -128 CHF
+
+2025-05-01 * "Landlord GmbH" "May rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2025-06-30 * "Employer AG" "June salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2025-06-25 * "Freelance Client B" "Backend work"
+  Income:Freelance         -3000 CHF
+  Assets:Bank:Checking      3000 CHF
+
+2025-06-10 * "EWZ" "Electricity bill"
+  Expenses:Utilities         155 CHF
+  Assets:Bank:Checking      -155 CHF
+
+2025-06-01 * "Landlord GmbH" "June rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+; Transfer to savings + credit card payment
+2025-06-30 * "Internal transfer to savings"
+  Assets:Bank:Savings       6000 CHF
+  Assets:Bank:Checking     -6000 CHF
+
+2025-06-30 * "Credit card payment"
+  Liabilities:CreditCard     185 CHF
+  Assets:Bank:Checking      -185 CHF
+
+; ────────────────────────────────────────────
+; 2026 Transactions
+; ────────────────────────────────────────────
+2026-01-31 * "Employer AG" "January salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2026-01-08 * "Migros" "Groceries"
+  Expenses:Food              152 CHF
+  Assets:Bank:Checking      -152 CHF
+
+2026-01-10 * "SBB" "Monthly transport pass"
+  Expenses:Transport          95 CHF
+  Assets:Bank:Checking       -95 CHF
+
+2026-01-01 * "Landlord GmbH" "January rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2026-02-28 * "Employer AG" "February salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2026-02-10 * "Coop" "Groceries"
+  Expenses:Food              118 CHF
+  Assets:Bank:Checking      -118 CHF
+
+2026-02-01 * "Landlord GmbH" "February rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
+
+2026-03-31 * "Employer AG" "March salary"
+  Income:Salary            -9500 CHF
+  Assets:Bank:Checking      9500 CHF
+
+2026-03-15 * "Freelance Client C" "Consulting"
+  Income:Freelance         -2200 CHF
+  Assets:Bank:Checking      2200 CHF
+
+2026-03-20 * "Zahnarzt" "Dental cleaning"
+  Expenses:Health            120 CHF
+  Assets:Bank:Checking      -120 CHF
+
+2026-03-01 * "Landlord GmbH" "March rent"
+  Expenses:Rent             2000 CHF
+  Assets:Bank:Checking     -2000 CHF
