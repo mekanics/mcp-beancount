@@ -95,7 +95,7 @@ Add to your OpenClaw MCP config:
 
 | Tool | Signature | Description |
 |---|---|---|
-| `get_net_worth` | `(date?: str)` | Net worth (assets − liabilities) as of date |
+| `get_net_worth` | `(date?: str)` | Net worth (assets − liabilities) as of date, multi-currency with price conversion |
 | `get_balances` | `(account_pattern: str)` | Non-zero balances matching account prefix/glob |
 | `get_income_statement` | `(year: int, month?: int)` | Income vs expenses for a period |
 | `get_transactions` | `(account?: str, since?: str, limit?: int)` | Recent transactions, filterable |
@@ -104,8 +104,25 @@ Add to your OpenClaw MCP config:
 ### Examples
 
 ```python
-# Net worth today
+# Net worth today (multi-currency, per-currency breakdown + converted total)
 get_net_worth()
+# Returns:
+# {
+#   "as_of": "2026-03-28",
+#   "base_currency": "CHF",
+#   "assets": {
+#     "Assets:Bank:UBS":    {"CHF": 50000.0},
+#     "Assets:Broker:IBKR": {"USD": 30000.0}
+#   },
+#   "liabilities": {
+#     "Liabilities:CreditCard": {"CHF": -2000.0}
+#   },
+#   "total_assets":       {"CHF": 50000.0, "USD": 30000.0},
+#   "total_liabilities":  {"CHF": -2000.0},
+#   "net_worth":          {"CHF": 48000.0, "USD": 30000.0},
+#   "net_worth_converted": 74700.0,   # CHF 48000 + USD 30000 * 0.89
+#   "skipped_positions":  []          # currencies with no price directive
+# }
 
 # Net worth as of 2025-12-31
 get_net_worth(date="2025-12-31")
