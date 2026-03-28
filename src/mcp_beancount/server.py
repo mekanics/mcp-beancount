@@ -47,8 +47,16 @@ def get_net_worth(date: str | None = None) -> dict:
               latest transaction date in the ledger.
 
     Returns:
-        dict with as_of, assets, liabilities, total_assets, total_liabilities,
-        net_worth, currency.
+        dict with keys:
+          - as_of: ISO date string
+          - base_currency: str (from operating_currency or BASE_CURRENCY env)
+          - assets: {account: {currency: float}}
+          - liabilities: {account: {currency: float}}
+          - total_assets: {currency: float}
+          - total_liabilities: {currency: float}
+          - net_worth: {currency: float}  (per-currency, no conversion)
+          - net_worth_converted: float  (scalar in base_currency, via price directives)
+          - skipped_positions: [currency]  (currencies with no price directive)
     """
     entries, _errors, options = loader.get()
     return _get_net_worth(entries, options, date=date)
