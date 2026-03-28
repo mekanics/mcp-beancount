@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "ignoreUnstable": true,
+  "stabilityDays": 3,
+  "packageRules": [
+    {
+      "matchPackageNames": ["python"],
+      "allowedVersions": "!/^(3\\.1[4-9]|[4-9]\\.).*-slim/"
+    }
+  ]
+}
