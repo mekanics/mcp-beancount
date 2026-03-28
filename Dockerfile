@@ -8,14 +8,14 @@ WORKDIR /app
 # Copy dependency files first for layer caching
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (no dev deps, no editable install)
-RUN uv sync --frozen --no-dev --no-editable
+# Install all dependencies + the package itself into the system Python
+RUN uv pip install --system --frozen .
 
 # Copy source
 COPY src/ ./src/
 
-# Install the package itself
-RUN uv pip install --system --no-deps .
+# Re-install the package itself (now with real source, no-deps since already installed)
+RUN uv pip install --system --no-deps --no-editable .
 
 ENV BEANCOUNT_FILE=""
 ENV BASE_CURRENCY=""
