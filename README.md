@@ -26,6 +26,7 @@ uv sync
 | `BEANCOUNT_FILE` | ✅ | — | Absolute path to your `.beancount` ledger file |
 | `ACCOUNT_ALLOWLIST` | ❌ | (none) | Comma-separated account prefix whitelist (e.g. `Assets:Bank,Expenses:`) |
 | `BEANCOUNT_RELOAD` | ❌ | `false` | Reload ledger on every tool call (development mode) |
+| `BASE_CURRENCY` | ❌ | `operating_currency` from ledger | Override the base currency for `net_worth_converted` (e.g. `CHF`) |
 
 Copy `.env.example` to `.env` and fill in your values:
 
