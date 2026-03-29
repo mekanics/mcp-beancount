@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import calendar
+import datetime
+
 import pytest
 
 from mcp_beancount.loader import BeancountLoader
@@ -127,6 +130,38 @@ def test_net_worth_positive(entries, options):
     """Net worth CHF entry is positive for a healthy ledger."""
     result = get_net_worth(entries, options)
     assert result["net_worth"].get("CHF", 0.0) > 0
+
+
+# ── Tests — date aliases ──────────────────────────────────────────────────────
+
+
+def test_no_date_returns_today(entries, options):
+    """date=None now returns today's date, not the latest ledger date."""
+    today = datetime.date.today().isoformat()
+    result = get_net_worth(entries, options)
+    assert result["as_of"] == today
+
+
+def test_date_today_returns_today(entries, options):
+    """date='today' resolves to today's date."""
+    today = datetime.date.today().isoformat()
+    result = get_net_worth(entries, options, date="today")
+    assert result["as_of"] == today
+
+
+def test_date_end_of_month_returns_last_day(entries, options):
+    """date='end-of-month' resolves to the last day of the current month."""
+    today = datetime.date.today()
+    last_day = calendar.monthrange(today.year, today.month)[1]
+    expected = datetime.date(today.year, today.month, last_day).isoformat()
+    result = get_net_worth(entries, options, date="end-of-month")
+    assert result["as_of"] == expected
+
+
+def test_iso_date_still_works(entries, options):
+    """ISO 8601 date string is parsed correctly."""
+    result = get_net_worth(entries, options, date="2026-03-01")
+    assert result["as_of"] == "2026-03-01"
 
 
 # ── Tests — multi-currency ────────────────────────────────────────────────────

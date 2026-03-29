@@ -43,8 +43,10 @@ def get_net_worth(date: str | None = None) -> dict:
     """Get net worth (assets minus liabilities) as of a given date.
 
     Args:
-        date: ISO 8601 date string (e.g. "2026-01-01"). If omitted, uses the
-              latest transaction date in the ledger.
+        date: Date reference. Supported values:
+              - omitted or "today" → today's date
+              - "end-of-month"     → last day of the current month
+              - ISO 8601 string (e.g. "2026-01-01") → that date
 
     Returns:
         dict with keys:
@@ -63,18 +65,25 @@ def get_net_worth(date: str | None = None) -> dict:
 
 
 @mcp.tool()
-def get_balances(account_pattern: str) -> list[dict]:
+def get_balances(account_pattern: str, date: str | None = None) -> list[dict]:
     """Get non-zero account balances matching a pattern.
 
     Args:
         account_pattern: Account prefix or glob pattern (e.g. "Assets:",
                          "Assets:Bank:*", "Expenses:Food").
+        date: Optional date cutoff. Supported values:
+              - omitted → all transactions up to today
+              - "today"         → today's date
+              - "end-of-month"  → last day of the current month
+              - ISO 8601 string (e.g. "2026-01-01") → that date
+              When set, only transactions on or before the resolved date
+              are included.
 
     Returns:
         List of dicts: [{"account": str, "balance": float, "currency": str}]
     """
     entries, _errors, options = loader.get()
-    return _get_balances(entries, options, account_pattern, allowlist=allowlist)
+    return _get_balances(entries, options, account_pattern, allowlist=allowlist, date=date)
 
 
 @mcp.tool()
@@ -97,6 +106,7 @@ def get_income_statement(year: int, month: int | None = None) -> dict:
 def get_transactions(
     account: str | None = None,
     since: str | None = None,
+    until: str | None = None,
     limit: int = 50,
 ) -> list[dict]:
     """Get recent transactions, optionally filtered.
@@ -105,13 +115,15 @@ def get_transactions(
         account: Account name prefix filter (e.g. "Expenses:Food"). Optional.
         since: ISO 8601 date string; only return transactions on/after this
                date. Optional.
+        until: ISO 8601 date string; only return transactions on/before this
+               date. Optional.
         limit: Max number of transactions to return (capped at 200). Default 50.
 
     Returns:
         List of transaction dicts sorted by date descending (most recent first).
     """
     entries, _errors, options = loader.get()
-    return _get_transactions(entries, options, account=account, since=since, limit=limit)
+    return _get_transactions(entries, options, account=account, since=since, until=until, limit=limit)
 
 
 @mcp.tool()

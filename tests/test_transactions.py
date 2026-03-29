@@ -77,3 +77,41 @@ def test_transaction_has_required_fields(entries, options):
         assert "tags" in txn
         assert "links" in txn
         assert "postings" in txn
+
+
+# ── Tests — until parameter ───────────────────────────────────────────────────
+
+
+def test_until_filter_excludes_later_transactions(entries, options):
+    """until filter excludes transactions after the given date."""
+    result = get_transactions(entries, options, until="2023-12-31", limit=200)
+    for txn in result:
+        assert txn["date"] <= "2023-12-31"
+
+
+def test_until_filter_includes_on_date(entries, options):
+    """until filter includes transactions on the exact date."""
+    result = get_transactions(entries, options, until="2026-03-31", limit=200)
+    dates = [txn["date"] for txn in result]
+    # The ledger has a 2026-03-31 transaction; it must be included
+    assert "2026-03-31" in dates
+
+
+def test_since_and_until_together(entries, options):
+    """since and until can be combined to define a date range."""
+    result = get_transactions(entries, options, since="2026-01-01", until="2026-03-31", limit=200)
+    for txn in result:
+        assert "2026-01-01" <= txn["date"] <= "2026-03-31"
+
+
+def test_until_with_no_matching_transactions(entries, options):
+    """until before the first entry returns empty list."""
+    result = get_transactions(entries, options, until="2019-12-31")
+    assert result == []
+
+
+def test_until_does_not_affect_ordering(entries, options):
+    """Results are still sorted by date descending with until filter."""
+    result = get_transactions(entries, options, until="2026-03-31", limit=20)
+    dates = [txn["date"] for txn in result]
+    assert dates == sorted(dates, reverse=True)

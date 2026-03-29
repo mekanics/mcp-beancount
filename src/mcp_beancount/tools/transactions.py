@@ -15,6 +15,7 @@ def get_transactions(
     options: dict[str, Any],
     account: str | None = None,
     since: str | None = None,
+    until: str | None = None,
     limit: int = 50,
 ) -> list[dict[str, Any]]:
     """Return recent transactions, optionally filtered.
@@ -24,6 +25,7 @@ def get_transactions(
         options: Beancount options dict.
         account: Account name prefix filter (e.g. "Expenses:Food").
         since: ISO 8601 date string; only return transactions on/after this date.
+        until: ISO 8601 date string; only return transactions on/before this date.
         limit: Max number of transactions to return (capped at 200).
 
     Returns:
@@ -31,6 +33,7 @@ def get_transactions(
     """
     effective_limit = min(max(limit, 1), MAX_LIMIT)
     since_date = datetime.date.fromisoformat(since) if since else None
+    until_date = datetime.date.fromisoformat(until) if until else None
 
     results: list[dict[str, Any]] = []
 
@@ -38,6 +41,8 @@ def get_transactions(
         if not isinstance(entry, beancount_data.Transaction):
             continue
         if since_date and entry.date < since_date:
+            continue
+        if until_date and entry.date > until_date:
             continue
         if account and not _has_account(entry, account):
             continue

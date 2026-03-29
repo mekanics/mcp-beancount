@@ -10,6 +10,7 @@ from beancount.core import data as beancount_data
 from beancount.core.number import Decimal
 
 from mcp_beancount.allowlist import AllowList
+from mcp_beancount.tools.utils import resolve_date
 
 
 def get_balances(
@@ -17,6 +18,7 @@ def get_balances(
     options: dict[str, Any],
     account_pattern: str,
     allowlist: AllowList | None = None,
+    date: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return non-zero account balances matching a pattern.
 
@@ -26,6 +28,13 @@ def get_balances(
         account_pattern: Account prefix or glob pattern (e.g. "Assets:",
                          "Assets:Bank:*").
         allowlist: Optional AllowList to further restrict results.
+        date: Optional date cutoff. Supported values:
+              - None or "today" → today's date (all-time behaviour is preserved
+                when omitted, as entries are accumulated up to today)
+              - "end-of-month"  → last day of the current month
+              - ISO 8601 string (e.g. "2026-01-01") → that date
+              When set, only transactions on or before the resolved date are
+              included.
 
     Returns:
         List of dicts: [{"account": str, "balance": float, "currency": str}]
@@ -34,11 +43,15 @@ def get_balances(
     if allowlist is None:
         allowlist = AllowList([])
 
+    cutoff = resolve_date(date) if date is not None else None
+
     # Accumulate balances per account per currency
     balances: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
 
     for entry in entries:
         if not isinstance(entry, beancount_data.Transaction):
+            continue
+        if cutoff is not None and entry.date > cutoff:
             continue
         for posting in entry.postings:
             account = posting.account

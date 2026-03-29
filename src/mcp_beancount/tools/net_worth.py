@@ -12,6 +12,8 @@ from beancount.core import data as beancount_data
 from beancount.core.amount import Amount
 from beancount.core.number import Decimal
 
+from mcp_beancount.tools.utils import resolve_date
+
 
 def get_net_worth(
     entries: list[Any],
@@ -23,8 +25,10 @@ def get_net_worth(
     Args:
         entries: Beancount entries from loader.get().
         options: Beancount options dict.
-        date: ISO 8601 date string (e.g. "2026-01-01"). If None, uses the
-              latest transaction date in the ledger.
+        date: Date reference. Supported values:
+              - None or "today" → today's date
+              - "end-of-month"  → last day of the current month
+              - ISO 8601 string (e.g. "2026-01-01") → that date
 
     Returns:
         dict with keys: as_of, base_currency, assets, liabilities,
@@ -32,7 +36,7 @@ def get_net_worth(
         net_worth_converted (scalar in base_currency), skipped_positions.
     """
     # Determine cutoff date
-    cutoff = _parse_date(date) if date else _latest_date(entries)
+    cutoff = resolve_date(date)
 
     # Determine base currency
     base_currency = _base_currency(options)
@@ -126,18 +130,3 @@ def _base_currency(options: dict[str, Any]) -> str:
     if oc:
         return oc[0]
     return "CHF"
-
-
-def _parse_date(date_str: str) -> datetime.date:
-    """Parse ISO 8601 date string to datetime.date."""
-    return datetime.date.fromisoformat(date_str)
-
-
-def _latest_date(entries: list[Any]) -> datetime.date:
-    """Return the latest transaction date in the ledger."""
-    latest = datetime.date(2000, 1, 1)
-    for entry in entries:
-        if isinstance(entry, beancount_data.Transaction):
-            if entry.date > latest:
-                latest = entry.date
-    return latest
