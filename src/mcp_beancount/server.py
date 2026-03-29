@@ -136,11 +136,13 @@ def query(bql: str) -> dict:
 def main() -> None:
     """Run the MCP server.
 
-    Transport is selected via MCP_TRANSPORT (default: streamable-http).
-    This is our universal env var — consistent across Python and TypeScript MCPs.
+    Transport, host, and port are configured via FastMCP native env vars
+    (read automatically by FastMCP 3.x via pydantic-settings):
+      FASTMCP_TRANSPORT  (default: streamable-http)
+      FASTMCP_HOST       (default: 0.0.0.0)
+      FASTMCP_PORT       (default: 8000)
     """
-    transport = os.environ.get("MCP_TRANSPORT", "streamable-http")
-    mcp.run(transport=transport)
+    mcp.run()
 
 
 if __name__ == "__main__":

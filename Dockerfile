@@ -22,8 +22,9 @@ ENV BEANCOUNT_FILE=""
 ENV BASE_CURRENCY=""
 ENV ACCOUNT_ALLOWLIST=""
 ENV BEANCOUNT_RELOAD="false"
-# Universal MCP env vars — consistent across Python and TypeScript MCPs
-ENV MCP_TRANSPORT="streamable-http"
-ENV PORT="3000"
+# FastMCP 3.x native env vars (read via pydantic-settings)
+ENV FASTMCP_TRANSPORT="streamable-http"
+ENV FASTMCP_HOST="0.0.0.0"
+ENV FASTMCP_PORT="3000"
 
 ENTRYPOINT ["mcp-beancount"]
