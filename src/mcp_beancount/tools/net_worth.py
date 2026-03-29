@@ -7,12 +7,12 @@ import os
 from collections import defaultdict
 from typing import Any
 
-from beancount.core import convert, prices
+from beancount.core import prices
 from beancount.core import data as beancount_data
 from beancount.core.amount import Amount
 from beancount.core.number import Decimal
 
-from mcp_beancount.tools.utils import resolve_date
+from mcp_beancount.tools.utils import convert_chain, resolve_date
 
 
 def get_net_worth(
@@ -102,8 +102,8 @@ def get_net_worth(
             net_worth_converted_total += total
         else:
             amt = Amount(Decimal(str(total)), currency)
-            converted = convert.convert_amount(amt, base_currency, price_map, cutoff)
-            if converted is not None and converted.currency == base_currency:
+            converted = convert_chain(amt, base_currency, price_map, cutoff)
+            if converted is not None:
                 net_worth_converted_total += float(converted.number)
             else:
                 skipped_positions.append(currency)
