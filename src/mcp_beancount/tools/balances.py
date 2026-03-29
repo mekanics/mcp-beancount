@@ -90,6 +90,6 @@ def _matches(account: str, pattern: str) -> bool:
         return account.startswith(pattern)
     # If pattern contains "*" or "?", use fnmatch
     if "*" in pattern or "?" in pattern:
-        return fnmatch.fnmatch(account, pattern) or account.startswith(pattern.rstrip("*"))
+        return fnmatch.fnmatch(account, pattern)
     # Otherwise: exact match or prefix
     return account == pattern or account.startswith(pattern + ":")

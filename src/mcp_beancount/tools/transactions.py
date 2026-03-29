@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from beancount.core import data as beancount_data
 
@@ -66,12 +69,18 @@ def _serialize_txn(txn: beancount_data.Transaction) -> dict[str, Any]:
     """Serialize a beancount Transaction to a JSON-compatible dict."""
     postings = []
     for posting in txn.postings:
-        if posting.units is not None:
-            postings.append({
-                "account": posting.account,
-                "amount": float(round(posting.units.number, 2)),
-                "currency": posting.units.currency,
-            })
+        if posting.units is None:
+            logger.warning(
+                "Posting with None units in txn '%s' on %s — skipped",
+                txn.narration,
+                txn.date,
+            )
+            continue
+        postings.append({
+            "account": posting.account,
+            "amount": float(round(posting.units.number, 2)),
+            "currency": posting.units.currency,
+        })
 
     return {
         "date": txn.date.isoformat(),

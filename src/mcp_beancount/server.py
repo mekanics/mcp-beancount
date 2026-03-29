@@ -95,8 +95,16 @@ def get_income_statement(year: int, month: int | None = None) -> dict:
         month: Optional month 1-12. If omitted, covers the full year.
 
     Returns:
-        dict with period, total_income, total_expenses, net,
-        income_breakdown, expense_breakdown.
+        dict with:
+          - period: str ("YYYY" or "YYYY-MM")
+          - income_breakdown: {account: {currency: float}}
+          - expense_breakdown: {account: {currency: float}}
+          - total_income: {currency: float}
+          - total_expenses: {currency: float}
+          - net: {currency: float}
+          - total_income_converted: float (scalar in base_currency)
+          - total_expenses_converted: float (scalar in base_currency)
+          - base_currency: str
     """
     entries, _errors, options = loader.get()
     return _get_income_statement(entries, options, year=year, month=month)
