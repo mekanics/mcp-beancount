@@ -134,8 +134,13 @@ def query(bql: str) -> dict:
 
 
 def main() -> None:
-    """Run the MCP server (stdio transport)."""
-    mcp.run()
+    """Run the MCP server.
+
+    Transport is selected via MCP_TRANSPORT (default: streamable-http).
+    This is our universal env var — consistent across Python and TypeScript MCPs.
+    """
+    transport = os.environ.get("MCP_TRANSPORT", "streamable-http")
+    mcp.run(transport=transport)
 
 
 if __name__ == "__main__":
