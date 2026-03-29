@@ -4,6 +4,16 @@ All notable changes to mcp-beancount are documented here.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-03-29
+
+### Fixed
+
+- **Multi-hop currency conversion** — positions priced via an intermediate currency
+  (e.g. VT→USD→CHF) are now correctly converted to the base currency instead of
+  landing in `skipped_positions`. Implements a `convert_chain()` helper in `utils.py`
+  that discovers intermediaries from the price map and chains up to 3 hops.
+  Resolves issue #21. Applies to both `get_net_worth` and `get_income_statement`.
+
 ## [0.3.0] — 2026-03-29
 
 ### Breaking Changes
