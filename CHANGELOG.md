@@ -4,6 +4,31 @@ All notable changes to mcp-beancount are documented here.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-03-29
+
+### Breaking Changes
+
+- **`get_income_statement` return shape changed** — `income_breakdown` and `expense_breakdown`
+  are now `{account: {currency: float}}` instead of `{account: float}`. `total_income`,
+  `total_expenses`, and `net` are now per-currency dicts instead of scalars.
+
+### Added
+
+- **`total_income_converted` / `total_expenses_converted`** — scalar totals in base currency
+  via price map (same approach as `net_worth_converted`).
+- **`BeancountLoader.last_errors`** — property exposing the errors list from the last load.
+
+### Fixed
+
+- **`BeancountLoader.get()` TOCTOU race** — lock now held across the full check-and-load
+  sequence; no more double-parse under concurrent requests.
+- **`BeancountLoader` silent parse errors** — errors are now logged as warnings via stdlib
+  `logging`.
+- **`_matches()` glob fallback** — removed broken `startswith` fallback that caused
+  `Assets:*:USD` to incorrectly match `Assets:Broker:EUR`. `fnmatch` handles globs correctly.
+- **`get_transactions` `units=None` postings** — now logs a warning instead of silently
+  dropping the posting.
+
 ## [0.2.0] — 2026-03-29
 
 ### Added
