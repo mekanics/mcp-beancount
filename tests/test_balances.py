@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from mcp_beancount.allowlist import AllowList
-from mcp_beancount.tools.balances import get_balances
+from mcp_beancount.tools.balances import _matches, get_balances
 
 
 def test_assets_prefix_returns_only_asset_accounts(entries, options):
@@ -117,3 +117,26 @@ def test_date_filter_excludes_future_transactions(entries, options):
     )
     # The opening balance in the sample is 15000 CHF; many transactions after that
     assert opening_balance != all_balance
+
+
+# ── Tests — _matches() glob behaviour ────────────────────────────────────────
+
+
+def test_glob_does_not_match_wrong_segment():
+    """Assets:*:USD should NOT match Assets:Broker:EUR (issue #15)."""
+    assert not _matches("Assets:Broker:EUR", "Assets:*:USD")
+
+
+def test_glob_matches_correct_segment():
+    """Assets:*:USD should match Assets:Broker:USD."""
+    assert _matches("Assets:Broker:USD", "Assets:*:USD")
+
+
+def test_glob_prefix_still_works():
+    """Assets:Bank:* should match Assets:Bank:Checking."""
+    assert _matches("Assets:Bank:Checking", "Assets:Bank:*")
+
+
+def test_glob_prefix_does_not_match_other_account():
+    """Assets:Bank:* should NOT match Assets:Savings:Checking."""
+    assert not _matches("Assets:Savings:Checking", "Assets:Bank:*")
