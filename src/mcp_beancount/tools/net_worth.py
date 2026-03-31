@@ -8,7 +8,6 @@ from collections import defaultdict
 from typing import Any
 
 from beancount.core import prices
-from beancount.core import data as beancount_data
 from beancount.core.amount import Amount
 from beancount.core.number import Decimal
 
@@ -21,6 +20,9 @@ def get_net_worth(
     date: str | None = None,
 ) -> dict[str, Any]:
     """Compute net worth (assets minus liabilities) as of a given date.
+
+    Uses beanquery to aggregate balances, which correctly handles synthetic
+    entries from pad/balance directives and cost-lot positions.
 
     Args:
         entries: Beancount entries from loader.get().
@@ -44,34 +46,21 @@ def get_net_worth(
     # Build price map from price directives in the ledger
     price_map = prices.build_price_map(entries)
 
-    # Accumulate balances per account per currency
-    balances: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
-
-    for entry in entries:
-        if not isinstance(entry, beancount_data.Transaction):
-            continue
-        if entry.date > cutoff:
-            continue
-        for posting in entry.postings:
-            account = posting.account
-            if not (account.startswith("Assets:") or account.startswith("Liabilities:")):
-                continue
-            if posting.units is not None:
-                currency = posting.units.currency
-                balances[account][currency] += posting.units.number
+    # Use beanquery to get correct per-account balances (handles pad/balance synthetics)
+    balances = _query_balances(entries, options, cutoff)
 
     # Build assets/liabilities dicts preserving per-currency breakdown
     assets: dict[str, dict[str, float]] = {}
     liabilities: dict[str, dict[str, float]] = {}
 
-    for account, currencies in balances.items():
-        per_currency = {c: float(v) for c, v in currencies.items() if v != 0}
-        if not per_currency:
+    for account, per_currency in balances.items():
+        non_zero = {c: float(v) for c, v in per_currency.items() if v != 0}
+        if not non_zero:
             continue
         if account.startswith("Assets:"):
-            assets[account] = per_currency
+            assets[account] = non_zero
         elif account.startswith("Liabilities:"):
-            liabilities[account] = per_currency
+            liabilities[account] = non_zero
 
     # Compute per-currency totals for assets
     total_assets: dict[str, float] = defaultdict(float)
@@ -119,6 +108,57 @@ def get_net_worth(
         "net_worth_converted": round(net_worth_converted_total, 2),
         "skipped_positions": skipped_positions,
     }
+
+
+def _query_balances(
+    entries: list[Any],
+    options: dict[str, Any],
+    cutoff: datetime.date,
+) -> dict[str, dict[str, Decimal]]:
+    """Use beanquery to get correct per-account, per-currency balances.
+
+    This correctly handles synthetic entries from pad/balance directives
+    and cost-lot positions (SUM(position) returns units currency).
+
+    Args:
+        entries: Beancount entries.
+        options: Beancount options dict.
+        cutoff: Date cutoff — only postings on or before this date are included.
+
+    Returns:
+        Mapping of account → {currency → Decimal balance}.
+    """
+    import beanquery
+    from beanquery.sources.beancount import attach
+    from beancount.parser.options import OPTIONS_DEFAULTS
+
+    # beanquery requires a fully-populated options dict (needs name_assets etc.)
+    # Merge defaults with whatever was provided so an empty dict still works.
+    full_options = {**OPTIONS_DEFAULTS, **options}
+
+    conn = beanquery.connect("")
+    attach(conn, "beancount:", entries=entries, errors=[], options=full_options)
+
+    bql = (
+        "SELECT account, SUM(position) AS balance "
+        "WHERE account ~ '^(Assets|Liabilities)' "
+        f"AND date <= {cutoff.isoformat()} "
+        "GROUP BY account"
+    )
+    cursor = conn.execute(bql)
+
+    balances: dict[str, dict[str, Decimal]] = {}
+    for row in cursor:
+        account, inventory = row
+        if inventory is None:
+            continue
+        per_currency: dict[str, Decimal] = defaultdict(Decimal)
+        # Inventory is iterable yielding Position objects with .units (Amount)
+        for position in inventory:
+            per_currency[position.units.currency] += position.units.number
+        balances[account] = dict(per_currency)
+
+    return balances
 
 
 def _base_currency(options: dict[str, Any]) -> str:

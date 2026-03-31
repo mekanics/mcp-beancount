@@ -215,3 +215,51 @@ def test_base_currency_env_override(monkeypatch):
     entries, options = _load_inline(MULTI_CURRENCY_LEDGER)
     result = get_net_worth(entries, options)
     assert result["base_currency"] == "EUR"
+
+
+# ── Tests — pad/balance directive correctness ─────────────────────────────────
+
+PAD_LEDGER = """
+option "operating_currency" "CHF"
+2026-01-01 open Assets:Bank:UBS CHF
+2026-01-01 open Equity:Opening CHF
+
+2026-01-01 pad Assets:Bank:UBS Equity:Opening
+2026-02-01 balance Assets:Bank:UBS 10000 CHF
+"""
+
+
+def test_pad_balance_included():
+    """pad/balance directives generate synthetic entries that must be included in balances."""
+    entries, options = _load_inline(PAD_LEDGER)
+    result = get_net_worth(entries, options)
+    # pad should have auto-filled Assets:Bank:UBS to 10000 CHF
+    assert result["total_assets"].get("CHF", 0.0) == pytest.approx(10000.0)
+    assert result["net_worth_converted"] == pytest.approx(10000.0)
+
+
+PAD_WITH_EXISTING_LEDGER = """
+option "operating_currency" "CHF"
+2026-01-01 open Assets:Bank:UBS CHF
+2026-01-01 open Assets:Savings CHF
+2026-01-01 open Equity:Opening CHF
+
+2026-01-01 pad Assets:Bank:UBS Equity:Opening
+2026-02-01 balance Assets:Bank:UBS 10000 CHF
+
+2026-01-15 * "Savings deposit"
+  Assets:Savings   5000 CHF
+  Equity:Opening  -5000 CHF
+"""
+
+
+def test_pad_balance_combined_with_transactions():
+    """pad/balance balances are correctly combined with regular transaction balances."""
+    entries, options = _load_inline(PAD_WITH_EXISTING_LEDGER)
+    result = get_net_worth(entries, options)
+    # Assets:Bank:UBS = 10000 CHF (via pad), Assets:Savings = 5000 CHF (via txn)
+    assert result["total_assets"].get("CHF", 0.0) == pytest.approx(15000.0)
+    assert "Assets:Bank:UBS" in result["assets"]
+    assert "Assets:Savings" in result["assets"]
+    assert result["assets"]["Assets:Bank:UBS"]["CHF"] == pytest.approx(10000.0)
+    assert result["assets"]["Assets:Savings"]["CHF"] == pytest.approx(5000.0)
