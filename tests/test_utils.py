@@ -92,26 +92,28 @@ option "operating_currency" "CHF"
 2026-01-01 open Assets:Bank:CHF CHF
 2026-01-01 open Assets:Broker:VT VT
 2026-01-01 open Equity:Opening CHF
+2026-01-01 open Equity:Opening:VT VT
 
 2026-01-01 price VT 110.00 USD
 2026-01-01 price USD 0.90 CHF
 
-2026-01-15 * "Opening balances"
+2026-01-15 * "Opening balances CHF"
   Assets:Bank:CHF       10000 CHF
-  Assets:Broker:VT      10 VT
   Equity:Opening       -10000 CHF
-  Equity:Opening       -10 VT
+
+2026-01-15 * "Opening balances VT"
+  Assets:Broker:VT      10 VT {109.9 USD}
+  Equity:Opening:VT    -10 VT {109.9 USD}
 """
 
 
 def test_integration_vt_not_in_skipped_positions():
-    """BQL convert(value()) is single-hop: VT priced in USD (not CHF directly)
-    cannot be converted to CHF via BQL, so VT appears in skipped_positions.
+    """BQL convert(value()) is multi-hop: value() converts VT→USD via cost currency,
+    then convert() converts USD→CHF via price directive. VT should NOT appear in
+    skipped_positions because the two-step chain is fully supported.
 
-    Note: the old convert_chain() implementation supported multi-hop (VT→USD→CHF).
-    The BQL-based implementation uses beanquery's convert() which only does direct
-    single-hop conversion. Positions that cannot be converted directly appear in
-    skipped_positions and are excluded from net_worth_converted.
+    Portfolio: 100 VT @ 109.9 USD cost, USD/CHF = 1.0 (1:1 for simplicity),
+    plus 10000 CHF cash. Total net_worth_converted ≈ 10990.0 CHF.
     """
     with tempfile.NamedTemporaryFile(mode="w", suffix=".beancount", delete=False) as f:
         f.write(VT_MULTI_HOP_LEDGER)
@@ -122,9 +124,9 @@ def test_integration_vt_not_in_skipped_positions():
         os.unlink(fname)
 
     result = get_net_worth(entries, options, date="2026-12-31")
-    # BQL convert(value()) is single-hop: VT→USD→CHF chain is not supported
-    assert "VT" in result["skipped_positions"], (
-        f"Expected VT in skipped_positions (BQL is single-hop), got: {result['skipped_positions']}"
+    # BQL convert(value()) handles multi-hop: VT→USD→CHF chain is supported
+    assert "VT" not in result["skipped_positions"], (
+        f"Expected VT not in skipped_positions (BQL is multi-hop), got: {result['skipped_positions']}"
     )
-    # net_worth_converted only includes the CHF portion (10000 CHF)
-    assert result["net_worth_converted"] == pytest.approx(10000.0, rel=1e-4)
+    # net_worth_converted includes both the CHF cash and the VT position
+    assert result["net_worth_converted"] == pytest.approx(10990.0, rel=1e-4)
