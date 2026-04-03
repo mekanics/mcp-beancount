@@ -1,18 +1,14 @@
-"""get_net_worth tool — sum Assets and Liabilities at a given date."""
+"""get_net_worth tool — sum Assets and Liabilities at a given date via BQL."""
 
 from __future__ import annotations
 
-import datetime
 import os
+import re
 from collections import defaultdict
 from typing import Any
 
-from beancount.core import prices
-from beancount.core import data as beancount_data
-from beancount.core.amount import Amount
-from beancount.core.number import Decimal
-
-from mcp_beancount.tools.utils import convert_chain, resolve_date
+from mcp_beancount.tools.query import run_bql_query
+from mcp_beancount.tools.utils import resolve_date
 
 
 def get_net_worth(
@@ -21,6 +17,9 @@ def get_net_worth(
     date: str | None = None,
 ) -> dict[str, Any]:
     """Compute net worth (assets minus liabilities) as of a given date.
+
+    Uses BQL via beanquery for balance computation, which correctly handles
+    all directive types (Transaction, Balance, Pad) and preserves cost basis.
 
     Args:
         entries: Beancount entries from loader.get().
@@ -35,90 +34,149 @@ def get_net_worth(
         total_assets, total_liabilities, net_worth (all per-currency dicts),
         net_worth_converted (scalar in base_currency), skipped_positions.
     """
-    # Determine cutoff date
     cutoff = resolve_date(date)
-
-    # Determine base currency
     base_currency = _base_currency(options)
+    cutoff_iso = cutoff.isoformat()
 
-    # Build price map from price directives in the ledger
-    price_map = prices.build_price_map(entries)
+    _zero_response = {
+        "as_of": cutoff_iso,
+        "base_currency": base_currency,
+        "assets": {},
+        "liabilities": {},
+        "total_assets": {},
+        "total_liabilities": {},
+        "net_worth": {},
+        "net_worth_converted": 0.0,
+        "skipped_positions": [],
+    }
 
-    # Accumulate balances per account per currency
-    balances: dict[str, dict[str, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
+    # ── Query 1: per-account balances ────────────────────────────────────────
+    bql_breakdown = (
+        f"SELECT account, "
+        f"convert(value(sum(position), {cutoff_iso}), '{base_currency}') AS balance "
+        f"WHERE (account ~ '^Assets' OR account ~ '^Liabilities') "
+        f"AND date <= {cutoff_iso} "
+        f"GROUP BY account "
+        f"ORDER BY account"
+    )
 
-    for entry in entries:
-        if not isinstance(entry, beancount_data.Transaction):
-            continue
-        if entry.date > cutoff:
-            continue
-        for posting in entry.postings:
-            account = posting.account
-            if not (account.startswith("Assets:") or account.startswith("Liabilities:")):
-                continue
-            if posting.units is not None:
-                currency = posting.units.currency
-                balances[account][currency] += posting.units.number
+    breakdown_result = run_bql_query(entries, options, bql_breakdown)
 
-    # Build assets/liabilities dicts preserving per-currency breakdown
+    if "error" in breakdown_result or not breakdown_result.get("rows"):
+        return _zero_response
+
+    # ── Query 2: total net worth (single row) ────────────────────────────────
+    bql_total = (
+        f"SELECT convert(value(sum(position), {cutoff_iso}), '{base_currency}') AS net_worth "
+        f"WHERE (account ~ '^Assets' OR account ~ '^Liabilities') "
+        f"AND date <= {cutoff_iso}"
+    )
+
+    total_result = run_bql_query(entries, options, bql_total)
+
+    # ── Parse per-account breakdown ──────────────────────────────────────────
     assets: dict[str, dict[str, float]] = {}
     liabilities: dict[str, dict[str, float]] = {}
 
-    for account, currencies in balances.items():
-        per_currency = {c: float(v) for c, v in currencies.items() if v != 0}
+    for row in breakdown_result["rows"]:
+        account = row["account"]
+        balance_str = row.get("balance", "")
+        per_currency, _skipped = _parse_inventory(balance_str)
+
+        # Remove zero balances
+        per_currency = {c: v for c, v in per_currency.items() if v != 0}
         if not per_currency:
             continue
+
         if account.startswith("Assets:"):
             assets[account] = per_currency
         elif account.startswith("Liabilities:"):
             liabilities[account] = per_currency
 
-    # Compute per-currency totals for assets
+    # ── Compute totals ────────────────────────────────────────────────────────
     total_assets: dict[str, float] = defaultdict(float)
     for per_currency in assets.values():
         for currency, amount in per_currency.items():
             total_assets[currency] += amount
 
-    # Compute per-currency totals for liabilities
     total_liabilities: dict[str, float] = defaultdict(float)
     for per_currency in liabilities.values():
         for currency, amount in per_currency.items():
             total_liabilities[currency] += amount
 
-    # Compute net worth per currency
+    # ── Net worth per currency ────────────────────────────────────────────────
     all_currencies = set(total_assets) | set(total_liabilities)
     net_worth_by_currency: dict[str, float] = {}
     for currency in all_currencies:
-        net_worth_by_currency[currency] = round(
+        nw = round(
             total_assets.get(currency, 0.0) + total_liabilities.get(currency, 0.0), 2
         )
+        if nw != 0:
+            net_worth_by_currency[currency] = nw
 
-    # Compute net_worth_converted in base_currency using price_map
-    net_worth_converted_total = 0.0
+    # ── Parse total (net_worth_converted) ────────────────────────────────────
+    net_worth_converted = 0.0
     skipped_positions: list[str] = []
 
-    for currency, total in net_worth_by_currency.items():
-        if currency == base_currency:
-            net_worth_converted_total += total
-        else:
-            amt = Amount(Decimal(str(total)), currency)
-            converted = convert_chain(amt, base_currency, price_map, cutoff)
-            if converted is not None:
-                net_worth_converted_total += float(converted.number)
+    if total_result.get("rows"):
+        total_inv_str = total_result["rows"][0].get("net_worth", "")
+        total_positions, _skipped = _parse_inventory(total_inv_str)
+        for currency, amount in total_positions.items():
+            if currency == base_currency:
+                net_worth_converted += amount
             else:
                 skipped_positions.append(currency)
 
     return {
-        "as_of": cutoff.isoformat(),
+        "as_of": cutoff_iso,
         "base_currency": base_currency,
         "assets": assets,
         "liabilities": liabilities,
         "total_assets": dict(total_assets),
         "total_liabilities": dict(total_liabilities),
         "net_worth": net_worth_by_currency,
-        "net_worth_converted": round(net_worth_converted_total, 2),
-        "skipped_positions": skipped_positions,
+        "net_worth_converted": round(net_worth_converted, 2),
+        "skipped_positions": sorted(set(skipped_positions)),
     }
+
+
+def _parse_inventory(inventory_str: str) -> tuple[dict[str, float], list[str]]:
+    """Parse a BQL serialized Inventory string into a per-currency float dict.
+
+    Inventory strings from beanquery look like:
+      ``(50000 CHF)``
+      ``(26700.00 CHF)``
+      ``(30000 USD, 50000 CHF)``
+      ``(-2000 CHF)``
+
+    Returns:
+        Tuple of (per_currency_dict, skipped_parts) where skipped_parts
+        contains position strings that could not be parsed.
+    """
+    if not inventory_str:
+        return {}, []
+
+    s = inventory_str.strip()
+    if s.startswith("(") and s.endswith(")"):
+        s = s[1:-1].strip()
+
+    if not s:
+        return {}, []
+
+    result: dict[str, float] = {}
+    skipped: list[str] = []
+
+    for part in s.split(","):
+        part = part.strip()
+        m = re.match(r"^(-?[0-9]+(?:\.[0-9]+)?)\s+([A-Z][A-Z0-9_.~-]{0,22})$", part)
+        if m:
+            number = float(m.group(1))
+            currency = m.group(2)
+            result[currency] = result.get(currency, 0.0) + number
+        elif part:
+            skipped.append(part)
+
+    return result, skipped
 
 
 def _base_currency(options: dict[str, Any]) -> str:

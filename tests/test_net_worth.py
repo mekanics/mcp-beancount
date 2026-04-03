@@ -168,21 +168,22 @@ def test_iso_date_still_works(entries, options):
 
 
 def test_multi_currency_no_mixing():
-    """USD account should only appear in total_assets['USD'], not 'CHF'."""
+    """With a price directive, USD converts to CHF — total_assets is single-currency."""
     entries, options = _load_inline(MULTI_CURRENCY_LEDGER)
     result = get_net_worth(entries, options)
-    # USD should be in total_assets
-    assert "USD" in result["total_assets"]
-    # CHF total should not include USD value
-    assert result["total_assets"].get("CHF", 0.0) == pytest.approx(50000.0)
+    # BQL convert(value()) converts USD→CHF via the price directive:
+    # 50000 CHF + 30000 USD * 0.89 = 76700 CHF
+    assert result["total_assets"] == {"CHF": pytest.approx(76700.0, rel=1e-4)}
+    # No unconverted currencies remain
+    assert "USD" not in result["total_assets"]
 
 
 def test_multi_currency_totals_correct():
-    """CHF and USD totals are correct independently."""
+    """With a price directive, BQL converts USD to CHF — total is 76700 CHF."""
     entries, options = _load_inline(MULTI_CURRENCY_LEDGER)
     result = get_net_worth(entries, options)
-    assert result["total_assets"]["CHF"] == pytest.approx(50000.0)
-    assert result["total_assets"]["USD"] == pytest.approx(30000.0)
+    # BQL convert(value()) collapses everything into CHF via the price directive
+    assert result["total_assets"]["CHF"] == pytest.approx(76700.0, rel=1e-4)
 
 
 def test_net_worth_converted_uses_price_map():
